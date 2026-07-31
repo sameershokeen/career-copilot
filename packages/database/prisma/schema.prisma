@@ -1,0 +1,94 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  fullName        String
+  targetRole      String
+  experienceLevel String
+  skills          String   // JSON stringified array of skills
+  bio             String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  resumes       Resume[]
+  applications  Application[]
+  interviews    InterviewSession[]
+}
+
+model Resume {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  summary     String
+  experience  String   // JSON stringified WorkExperience array
+  education   String   // JSON stringified EducationItem array
+  skills      String   // JSON stringified skills array
+  projects    String?  // JSON stringified ProjectItem array
+  rawText     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Job {
+  id            String   @id @default(uuid())
+  title         String
+  company       String
+  location      String
+  workplaceType String
+  salaryRange   String?
+  description   String
+  requirements  String   // JSON stringified requirements array
+  tags          String   // JSON stringified tags array
+  sourceUrl     String?
+  postedAt      DateTime @default(now())
+
+  applications  Application[]
+}
+
+model Application {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId        String
+  job          Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status       String    // Saved, Applied, Interviewing, Offer, Rejected
+  appliedDate  DateTime?
+  notes        String?
+  salaryOffered String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model InterviewSession {
+  id           String              @id @default(uuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetRole   String
+  topic        String              // Behavioral, System Design, Coding, General
+  status       String              // In Progress, Completed
+  overallScore Int?
+  feedback     String?
+  questions    InterviewQuestion[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model InterviewQuestion {
+  id                 String           @id @default(uuid())
+  interviewSessionId String
+  session            InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  question           String
+  idealAnswerOutline String
+  userAnswer         String?
+  score              Int?
+  feedback           String?
+}

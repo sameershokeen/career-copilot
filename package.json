@@ -1,0 +1,29 @@
+{
+  "name": "career-copilot-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Powered Career Development, Job Matching, Resume Optimization, and Interview Coaching Platform",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "keywords": [
+    "career",
+    "copilot",
+    "ai",
+    "resume-builder",
+    "job-matching",
+    "interview-prep",
+    "monorepo"
+  ],
+  "author": "Career Copilot Team",
+  "license": "MIT"
+}
