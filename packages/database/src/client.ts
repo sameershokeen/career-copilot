@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 declare global {
-  // Allow global `prisma` to prevent multiple client instances during hot reloading in dev
+  // Prevent multiple PrismaClient instances during hot reloading in dev
   // eslint-disable-next-line no-var
   var prismaGlobal: PrismaClient | undefined;
 }
@@ -16,4 +16,4 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.prismaGlobal = prisma;
 }
 
-export * from '@prisma/client';
+export type { PrismaClient };

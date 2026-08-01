@@ -7,6 +7,9 @@ node_modules/
 dist/
 build/
 out/
+*.tsbuildinfo
+.turbo/
+.vercel/
 
 # Python / AI Engine
 __pycache__/
@@ -20,21 +23,23 @@ ENV/
 
 # Environment files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
 
-# Logs
+# Logs & Coverage
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+coverage/
 
 # Database / SQLite / Local storage
 *.db
 *.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
 prisma/*.db
 
 # IDE & OS files
@@ -43,3 +48,7 @@ prisma/*.db
 .idea/
 *.swp
 *.swo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+

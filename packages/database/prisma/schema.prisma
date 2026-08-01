@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,88 +7,538 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  TEMPORARY
+  FREELANCE
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL
+  JUNIOR
+  MID_LEVEL
+  SENIOR
+  LEAD
+  EXECUTIVE
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  CANCELLED
+  RESPONDED
+}
+
+enum InterviewType {
+  PHONE_SCREEN
+  TECHNICAL
+  BEHAVIORAL
+  ONSITE
+  SYSTEM_DESIGN
+  FINAL_ROUND
+}
+
+enum ResumeType {
+  BLOCKCHAIN
+  BACKEND
+  FRONTEND
+  FULLSTACK
+  AI_ML
+  DEVOPS
+  CUSTOM
+}
+
+enum JobStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+  ARCHIVED
+}
+
+enum JobSource {
+  GREENHOUSE
+  LEVER
+  ASHBY
+  REMOTE_OK
+  WELLFOUND
+  YC
+  COMPANY
+  MANUAL
+  LINKEDIN
+  INDEED
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  CAD
+  AUD
+  INR
+  SGD
+}
+
+enum SalaryPeriod {
+  YEARLY
+  MONTHLY
+  HOURLY
+}
+
+enum CollectorStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ======================================================
+// 1. User
+// ======================================================
 model User {
-  id              String   @id @default(uuid())
-  email           String   @unique
-  fullName        String
-  targetRole      String
-  experienceLevel String
-  skills          String   // JSON stringified array of skills
-  bio             String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  headline  String?
+  bio       String?  @db.Text
+  github    String?
+  linkedin  String?
+  portfolio String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   resumes       Resume[]
-  applications  Application[]
-  interviews    InterviewSession[]
+  skills        UserSkill[]
+  aiGenerations AiGeneration[]
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
 }
 
-model Resume {
+// ======================================================
+// 2. Company
+// ======================================================
+model Company {
   id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  summary     String
-  experience  String   // JSON stringified WorkExperience array
-  education   String   // JSON stringified EducationItem array
-  skills      String   // JSON stringified skills array
-  projects    String?  // JSON stringified ProjectItem array
-  rawText     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  name        String
+  slug        String   @unique
+  website     String?
+  careersUrl  String?
+  linkedinUrl String?
+  githubUrl   String?
+  industry    String?
+  size        String?
+  location    String?
+  logo        String?
+  verified    Boolean  @default(false)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  jobs       Job[]
+  recruiters Recruiter[]
+
+  @@index([slug])
+  @@index([industry])
+  @@index([deletedAt])
+  @@map("companies")
 }
 
+// ======================================================
+// 3. Job
+// ======================================================
 model Job {
+  id              String           @id @default(uuid())
+  hash            String           @unique
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String
+  description     String           @db.Text
+  descriptionHtml String?          @db.Text
+  descriptionText String?          @db.Text
+  salaryMin       Int?
+  salaryMax       Int?
+  currency        Currency         @default(USD)
+  salaryPeriod    SalaryPeriod     @default(YEARLY)
+  location        String?
+  remote          Boolean          @default(false)
+  employmentType  EmploymentType?  @default(FULL_TIME)
+  experienceLevel ExperienceLevel? @default(MID_LEVEL)
+  postedAt        DateTime?        @default(now())
+  jobUrl          String
+  source          JobSource        @default(MANUAL)
+  status          JobStatus?       @default(ACTIVE)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  skills       JobSkill[]
+  matches      Match[]
+  coverLetters CoverLetter[]
+  applications Application[]
+  embeddings   JobEmbedding[]
+
+  @@index([hash])
+  @@index([companyId])
+  @@index([postedAt])
+  @@index([source])
+  @@index([status])
+  @@index([remote])
+  @@index([salaryMin, salaryMax])
+  @@index([deletedAt])
+  @@map("jobs")
+}
+
+// ======================================================
+// 4. Skill
+// ======================================================
+model Skill {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  category String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  jobSkills  JobSkill[]
+  userSkills UserSkill[]
+
+  @@index([name])
+  @@index([deletedAt])
+  @@map("skills")
+}
+
+// ======================================================
+// 5. JobSkill (Many-to-Many: Job <-> Skill)
+// ======================================================
+model JobSkill {
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([jobId, skillId])
+  @@index([jobId])
+  @@index([skillId])
+  @@map("job_skills")
+}
+
+// ======================================================
+// 6. UserSkill (Many-to-Many: User <-> Skill with level)
+// ======================================================
+model UserSkill {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  level     String? // e.g., Beginner, Intermediate, Expert
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+  @@map("user_skills")
+}
+
+// ======================================================
+// 7. Resume
+// ======================================================
+model Resume {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ResumeType @default(CUSTOM)
+  version   Int        @default(1)
+  title     String
+  json      Json? // Master structured JSON edited by AI
+  pdfUrl    String?
+  docxUrl   String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  matches    Match[]
+  coverLetters CoverLetter[]
+  applications Application[]
+  embeddings ResumeEmbedding[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([deletedAt])
+  @@map("resumes")
+}
+
+// ======================================================
+// 8. Match (AI Match Score & Analysis)
+// ======================================================
+model Match {
   id            String   @id @default(uuid())
-  title         String
-  company       String
-  location      String
-  workplaceType String
-  salaryRange   String?
-  description   String
-  requirements  String   // JSON stringified requirements array
-  tags          String   // JSON stringified tags array
-  sourceUrl     String?
-  postedAt      DateTime @default(now())
+  jobId         String
+  job           Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeId      String
+  resume        Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  score         Float
+  strengths     Json? // Array of strength strings
+  missingSkills Json? // Array of missing skill strings
+  summary       String?  @db.Text
 
-  applications  Application[]
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([jobId, resumeId])
+  @@index([jobId])
+  @@index([resumeId])
+  @@index([score])
+  @@index([deletedAt])
+  @@map("matches")
 }
 
+// ======================================================
+// 9. CoverLetter
+// ======================================================
+model CoverLetter {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeId  String
+  resume    Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([jobId])
+  @@index([resumeId])
+  @@index([deletedAt])
+  @@map("cover_letters")
+}
+
+// ======================================================
+// 10. Application
+// ======================================================
 model Application {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jobId        String
-  job          Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  status       String    // Saved, Applied, Interviewing, Offer, Rejected
-  appliedDate  DateTime?
-  notes        String?
-  salaryOffered String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                    String            @id @default(uuid())
+  jobId                 String
+  job                   Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeId              String
+  resume                Resume            @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  status                ApplicationStatus @default(SAVED)
+  appliedAt             DateTime?
+  notes                 String?           @db.Text
+  externalApplicationId String?
+  appliedVia            String?
+  lastSyncedAt          DateTime?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  followUps        FollowUp[]
+  interviews       Interview[]
+  applicationNotes Note[]
+
+  @@index([jobId])
+  @@index([resumeId])
+  @@index([status])
+  @@index([appliedAt])
+  @@index([deletedAt])
+  @@map("applications")
 }
 
-model InterviewSession {
-  id           String              @id @default(uuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  targetRole   String
-  topic        String              // Behavioral, System Design, Coding, General
-  status       String              // In Progress, Completed
-  overallScore Int?
-  feedback     String?
-  questions    InterviewQuestion[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+// ======================================================
+// 11. Recruiter
+// ======================================================
+model Recruiter {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email     String?
+  linkedin  String?
+  role      String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([email])
+  @@index([deletedAt])
+  @@map("recruiters")
 }
 
-model InterviewQuestion {
-  id                 String           @id @default(uuid())
-  interviewSessionId String
-  session            InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
-  question           String
-  idealAnswerOutline String
-  userAnswer         String?
-  score              Int?
-  feedback           String?
+// ======================================================
+// 12. FollowUp
+// ======================================================
+model FollowUp {
+  id            String         @id @default(uuid())
+  applicationId String
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  status        FollowUpStatus @default(PENDING)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([applicationId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("follow_ups")
+}
+
+// ======================================================
+// 13. Interview
+// ======================================================
+model Interview {
+  id            String        @id @default(uuid())
+  applicationId String
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          InterviewType @default(TECHNICAL)
+  date          DateTime
+  round         Int           @default(1)
+  notes         String?       @db.Text
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([applicationId])
+  @@index([date])
+  @@index([type])
+  @@index([deletedAt])
+  @@map("interviews")
+}
+
+// ======================================================
+// 14. Note
+// ======================================================
+model Note {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  content       String      @db.Text
+
+  deletedAt DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([applicationId])
+  @@index([deletedAt])
+  @@map("notes")
+}
+
+// ======================================================
+// 15. CollectorRun (Job Scraping & Collector Telemetry)
+// ======================================================
+model CollectorRun {
+  id            String          @id @default(uuid())
+  source        JobSource
+  status        CollectorStatus @default(RUNNING)
+  startedAt     DateTime        @default(now())
+  finishedAt    DateTime?
+  jobsFound     Int             @default(0)
+  jobsInserted  Int             @default(0)
+  jobsUpdated   Int             @default(0)
+  errors        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([source])
+  @@index([status])
+  @@index([startedAt])
+  @@map("collector_runs")
+}
+
+// ======================================================
+// 16. AiGeneration (AI Cost, Tokens & Prompt Monitoring)
+// ======================================================
+model AiGeneration {
+  id               String   @id @default(uuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  promptVersion    String?
+  model            String
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  latency          Int?     // Latency in milliseconds
+  cost             Float?   // Calculated API cost in USD
+  prompt           String?  @db.Text
+  output           String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([model])
+  @@index([createdAt])
+  @@map("ai_generations")
+}
+
+// ======================================================
+// 17. JobEmbedding (Vector Embeddings for Semantic Search)
+// ======================================================
+model JobEmbedding {
+  id         String   @id @default(uuid())
+  jobId      String   @unique
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  model      String   @default("text-embedding-3-small")
+  vector     Json     // Vector array (1536 float values)
+  dimensions Int      @default(1536)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([model])
+  @@map("job_embeddings")
+}
+
+// ======================================================
+// 18. ResumeEmbedding (Vector Embeddings for Semantic Matching)
+// ======================================================
+model ResumeEmbedding {
+  id         String   @id @default(uuid())
+  resumeId   String   @unique
+  resume     Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  model      String   @default("text-embedding-3-small")
+  vector     Json     // Vector array (1536 float values)
+  dimensions Int      @default(1536)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resumeId])
+  @@index([model])
+  @@map("resume_embeddings")
 }
