@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 211 100% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 211 100% 46%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-bg: 222 47% 9%;
+    --sidebar-border: 222 47% 14%;
+    --sidebar-text: 214 32% 70%;
+    --sidebar-text-active: 0 0% 100%;
+    --sidebar-accent: 211 100% 46%;
+    --sidebar-hover: 222 47% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/30;
+  }
+}
+
+@layer utilities {
+  .sidebar-bg {
+    background-color: hsl(var(--sidebar-bg));
+  }
+
+  .sidebar-border {
+    border-color: hsl(var(--sidebar-border));
+  }
+
+  .sidebar-text {
+    color: hsl(var(--sidebar-text));
+  }
+
+  .sidebar-text-active {
+    color: hsl(var(--sidebar-text-active));
+  }
+
+  .sidebar-hover:hover {
+    background-color: hsl(var(--sidebar-hover));
+  }
+
+  /* Status badge utilities */
+  .status-queued {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .status-applied {
+    @apply bg-blue-50 text-blue-700 border border-blue-200;
+  }
+
+  .status-viewed {
+    @apply bg-purple-50 text-purple-700 border border-purple-200;
+  }
+
+  .status-interview {
+    @apply bg-amber-50 text-amber-700 border border-amber-200;
+  }
+
+  .status-offer {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+
+  .status-rejected {
+    @apply bg-rose-50 text-rose-700 border border-rose-200;
+  }
+
+  .status-manual_required {
+    @apply bg-orange-50 text-orange-700 border border-orange-200;
+  }
+
+  .status-failed {
+    @apply bg-red-50 text-red-700 border border-red-200;
+  }
+
+  /* Score ring colors */
+  .score-high {
+    @apply text-emerald-600;
+  }
+
+  .score-mid {
+    @apply text-amber-600;
+  }
+
+  .score-low {
+    @apply text-rose-600;
+  }
+
+  /* Animated skeleton */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "career-copilot",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "ai",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n frontend,backend,ai -c blue,green,yellow \"npm run dev --workspace=frontend\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=ai\"",
+    "build": "npm run build --workspace=shared && npm run build --workspace=frontend && npm run build --workspace=backend && npm run build --workspace=ai",
+    "db:migrate": "npm run migrate --workspace=backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "pg": "^8.12.0"
+  }
+}
